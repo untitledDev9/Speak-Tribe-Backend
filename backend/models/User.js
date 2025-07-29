@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
 
   // kjeufujf
+  // kjeufujf
 
   // ✅ Add this line:
   username: { type: String, unique: true, sparse: true },
