@@ -12,6 +12,9 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.get("/" ,(req,res) => {
+  res.json({message: "backend is working"})
+})
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/users', require('./routes/userRoutes'));
