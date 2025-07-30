@@ -2,6 +2,7 @@
 const bcrypt = require('bcryptjs')
 const tempUsers = require('../utils/tempUsers')
 const nodemailer = require('nodemailer');
+const userInfo = require('../models/User')
 
 
 const sentOtp = async (req, res) => {
@@ -60,6 +61,46 @@ const sentOtp = async (req, res) => {
     console.error(error)
     res.status(500).json({message: 'Error sending OTP'})
   }
+}
+
+
+// verifying OTP
+const verifyOtp = async (req, res) => {
+  const {email, otp} = req.body
+
+  const tempUser = tempUsers[email]
+
+  if(!tempUser) {
+    return res.status(400).json({message: 'No OTP request found for this email.'})
+  }
+
+  // check if OTP is correct
+  if(tempUser.otp !== otp) {
+    return res.status(400).json({message: 'invalid OTP'})
+  }
+
+  // save the user to the database
+  const newUser = new userInfo({
+    firstName: tempUser.firstName,
+    lastName: tempUser.lastName,
+    userName: tempUser.userName,
+    email: tempUser.email,
+    phone: tempUser.phone,
+    age: tempUser.age,
+    password: tempUser.password,
+  })
+
+  try {
+    await newUser.save()
+    delete tempUsers[email];    // clean up temp store
+    res.status(201).json({message: 'User verified and registered successfully'})
+  } catch (error) {
+    res.status(500).json({message: 'Error saving user to DB'})
+  }
+
+
+
+
 }
 
 
