@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 const userInfo = require('../models/User')
 
 
-const sentOtp = async (req, res) => {
+const sendOTP = async (req, res) => {
   const {firstName, lastName, userName, phone, email, age, password} = req.body
 
   // check if email already in tempuser store or DB (to prevent spam or dublicates)
@@ -65,7 +65,7 @@ const sentOtp = async (req, res) => {
 
 
 // verifying OTP
-const verifyOtp = async (req, res) => {
+const verifyOTP = async (req, res) => {
   const {email, otp} = req.body
 
   const tempUser = tempUsers[email]
@@ -95,7 +95,9 @@ const verifyOtp = async (req, res) => {
     delete tempUsers[email];    // clean up temp store
     res.status(201).json({message: 'User verified and registered successfully'})
   } catch (error) {
-    res.status(500).json({message: 'Error saving user to DB'})
+    console.error("DB Save Error:", error);
+return res.status(500).json({ message: "Error saving user to DB", error: error.message });
+
   }
 
 
@@ -103,7 +105,10 @@ const verifyOtp = async (req, res) => {
 
 }
 
-
+module.exports = {
+  sendOTP,
+  verifyOTP,
+};
 
 
 
