@@ -2,45 +2,46 @@ const userInfo = require('../models/User')
 const bcrypt = require('bcryptjs')
 
 
-export const SignUp = async (rea, res) => {
+export const SignUp = async(req, res) => {
   try {
-    // getting data from the request body
-    const { firstName, lastName, userName, phone, email, age, password } = req.body
+  // get data from req body
+  const {firstName, lastName, userName, email, phone, age, password} = req.body
 
-    // checking if user exist
-    const existingUser = await userInfo.findOne({ email })
-    if (existingUser) {
-      return res.status(400).json({
-        message: 'User already exists with this email'
-      })
-    }
-
-    // hashing of password
-    const salt = await bcrypt.genSalt(10); // create salt
-    const hashedPassword = await bcrypt.hash(password, salt) // hash password
-
-
-       // 4. Create a new user with hashed password
-    const newUser = new userInfo ({
-      firstName,
-      lastName,
-      userName,
-      email,
-      phone,
-      age,
-      password : hashedPassword
+  // check if user exist, using the email
+  const existingUser = await userInfo.findOne({email})
+  if(existingUser) {
+    return res.status(400).json({
+      message: 'user already exist with this email'
     })
+  }
 
-    // save new user
-    await newUser.save()
+  //hash password before saving
+  const salt = await bcrypt.genSalt(10)  // create salt
+  const hashedPassword = await bcrypt.hash(password, salt) // hashed password
 
-    //send success response
-    res.status(201).json({message: 'User Created successfully'})
+  //create new user with hashed password
+  const newUser = new userInfo({
+    firstName,
+    lastName,
+    userName,
+    phone,
+    age,
+    email,
+    password : hashedPassword // stored hased password to database
+  })
 
+  // save new user
+  await newUser.save()
 
-  } catch (error) {
+  //send sucess message
+  res.status(201).json({
+    message: 'User registered successfully'
+  })
+  }
+
+  catch (error){
     res.status(500).json({
-      message: 'Somthing went wrong on the server',
+      message: 'internal server error',
       error : error.message
     })
   }
