@@ -1,10 +1,11 @@
 // const userInfo = require('../models/User')
 const bcrypt = require('bcryptjs')
-const tempUsers = require('../utils/tempUsers')
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken')
+const tempUsers = require('../utils/tempUsers')
 const userInfo = require('../models/User')
 
-
+// get otp
 const sendOTP = async (req, res) => {
   const {firstName, lastName, userName, phone, email, age, password} = req.body
 
@@ -105,9 +106,52 @@ return res.status(500).json({ message: "Error saving user to DB", error: error.m
 
 }
 
+
+// Login
+const loginUser = async (req, res) => {
+  const {email, password} = req.body
+try {
+  // check if user exists
+  const user = await userInfo.findOne({email})
+  if(!user) {
+    return res.status(400).json({message: 'Invalid email or password'})
+  }
+
+  // compare password
+  const isMatch = await bcrypt.compare(password, user.password)
+  if(!isMatch) {
+    return res.status(400).json({message: 'Invalid email or password'})
+  }
+
+  //  create JWT token
+  const token = jwt.sign(
+    {userId: user._id},
+    process.env.JWT_SECRET,
+    {expiresIn: '7d'}
+  )
+
+  // send token and user (without password)
+  const {password: _, ...userData} = user.toObject()  // remove password
+  res.status(200).json({
+    message: 'Login successful',
+    token,
+    user: userData
+  });
+
+  } catch(err) {
+    res.status(500).json({message: 'server error', err: err.message})
+  }
+}
+
+
+
+
+
+
 module.exports = {
   sendOTP,
   verifyOTP,
+  loginUser
 };
 
 
