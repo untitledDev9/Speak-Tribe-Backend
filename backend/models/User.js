@@ -46,6 +46,6 @@ const UserSchema = new mongoose.Schema({
   otpExpires: {
     type: Date,
   },
-}, { timestamps: true })
+}, { timestamps: true }, { collection: 'userInfo' })
 
 module.exports = mongoose.model('userInfo', UserSchema)

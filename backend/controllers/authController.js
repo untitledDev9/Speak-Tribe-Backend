@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken')
 const tempUsers = require('../utils/tempUsers')
 const userInfo = require('../models/User')
 
-// get otp
+// send otp
 const sendOTP = async (req, res) => {
   const {firstName, lastName, userName, phone, email, age, password} = req.body
 
