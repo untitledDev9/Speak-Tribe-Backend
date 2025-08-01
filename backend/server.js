@@ -15,6 +15,27 @@ app.use(express.json())     // to parse json data or bodies
 const authRoutes = require('./routes/authRoutes')   // all my auth contollers e.g login, signup
 app.use('/api/auth', authRoutes)    // base URL
 
+const dashboardRoute = require('./routes/dashboard'); // user dashboard routh
+app.use('/api', dashboardRoute);
+
+app.get('/', (req,res) => {
+  res.status(200).json({
+    message: 'Speak Tribe server is up and running'
+  })
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
 const PORT = process.env.PORT || 6000
 app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT} ✅✅✅`)
