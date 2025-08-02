@@ -67,9 +67,31 @@ const sendOTP = async (req, res) => {
 
 // verifying OTP
 const verifyOTP = async (req, res) => {
-  const {email, otp} = req.body
+  const { email, otp } = req.body;
 
-  const tempUser = tempUsers[email]
+  console.log("Received email:", email);
+  console.log("Received OTP:", otp);
+  console.log("Stored Temp User:", tempUsers[email]);
+
+  const tempUser = tempUsers[email];
+
+  // if (!tempUser) {
+  //   return res.status(400).json({ message: 'No OTP request found for this email.' });
+  // }
+
+  // if (tempUser.otp !== otp) {
+  //   console.log("Mismatch OTP: Expected", tempUser.otp, "but got", otp);
+  //   return res.status(400).json({ message: 'Invalid OTP' });
+  // }
+
+
+
+
+
+
+  // const {email, otp} = req.body
+
+  // const tempUser = tempUsers[email]
 
   if(!tempUser) {
     return res.status(400).json({message: 'No OTP request found for this email.'})
