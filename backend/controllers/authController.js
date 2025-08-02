@@ -7,7 +7,15 @@ const userInfo = require('../models/User')
 
 // send otp
 const sendOTP = async (req, res) => {
-  const {firstName, lastName, userName, phone, email, age, password} = req.body
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    userName = "", // optional default
+    phone = "",     // optional default
+    age = null      // optional default
+  } = req.body;
 
   // check if email already in tempuser store or DB (to prevent spam or dublicates)
   if (tempUsers[email]) {
@@ -49,7 +57,7 @@ const sendOTP = async (req, res) => {
       age,
       phone,
       email,
-      password : hasedPassword,
+      password: hasedPassword,
       otp,
       createdAt: Date.now()
     }
@@ -60,7 +68,7 @@ const sendOTP = async (req, res) => {
     })
   } catch (error) {
     console.error(error)
-    res.status(500).json({message: 'Error sending OTP'})
+    res.status(500).json({ message: 'Error sending OTP' })
   }
 }
 
@@ -75,31 +83,14 @@ const verifyOTP = async (req, res) => {
 
   const tempUser = tempUsers[email];
 
-  // if (!tempUser) {
-  //   return res.status(400).json({ message: 'No OTP request found for this email.' });
-  // }
 
-  // if (tempUser.otp !== otp) {
-  //   console.log("Mismatch OTP: Expected", tempUser.otp, "but got", otp);
-  //   return res.status(400).json({ message: 'Invalid OTP' });
-  // }
-
-
-
-
-
-
-  // const {email, otp} = req.body
-
-  // const tempUser = tempUsers[email]
-
-  if(!tempUser) {
-    return res.status(400).json({message: 'No OTP request found for this email.'})
+  if (!tempUser) {
+    return res.status(400).json({ message: 'No OTP request found for this email.' })
   }
 
   // check if OTP is correct
-  if(tempUser.otp !== otp) {
-    return res.status(400).json({message: 'invalid OTP'})
+  if (tempUser.otp !== otp) {
+    return res.status(400).json({ message: 'invalid OTP' })
   }
 
   // save the user to the database
@@ -116,10 +107,10 @@ const verifyOTP = async (req, res) => {
   try {
     await newUser.save()
     delete tempUsers[email];    // clean up temp store
-    res.status(201).json({message: 'User verified and registered successfully'})
+    res.status(201).json({ message: 'User verified and registered successfully' })
   } catch (error) {
     console.error("DB Save Error:", error);
-return res.status(500).json({ message: "Error saving user to DB", error: error.message });
+    return res.status(500).json({ message: "Error saving user to DB", error: error.message });
 
   }
 
@@ -131,37 +122,37 @@ return res.status(500).json({ message: "Error saving user to DB", error: error.m
 
 // Login
 const loginUser = async (req, res) => {
-  const {email, password} = req.body
-try {
-  // check if user exists
-  const user = await userInfo.findOne({email})
-  if(!user) {
-    return res.status(400).json({message: 'Invalid email or password'})
-  }
+  const { email, password } = req.body
+  try {
+    // check if user exists
+    const user = await userInfo.findOne({ email })
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' })
+    }
 
-  // compare password
-  const isMatch = await bcrypt.compare(password, user.password)
-  if(!isMatch) {
-    return res.status(400).json({message: 'Invalid email or password'})
-  }
+    // compare password
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid email or password' })
+    }
 
-  //  create JWT token
-  const token = jwt.sign(
-    {userId: user._id, email: user.email},
-    process.env.JWT_SECRET,
-    {expiresIn: '7d'}
-  )
+    //  create JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
 
-  // send token and user (without password)
-  const {password: _, ...userData} = user.toObject()  // remove password
-  res.status(200).json({
-    message: 'Login successful',
-    token,
-    user: userData
-  });
+    // send token and user (without password)
+    const { password: _, ...userData } = user.toObject()  // remove password
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: userData
+    });
 
-  } catch(err) {
-    res.status(500).json({message: 'server error', err: err.message})
+  } catch (err) {
+    res.status(500).json({ message: 'server error', err: err.message })
   }
 }
 
