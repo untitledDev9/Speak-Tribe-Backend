@@ -1,9 +1,10 @@
-const userInfo = require('../models/userSchema');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken')
+const tempUsers = require('../utils/tempUsers')
+const userInfo = require('../models/User')
 
-const tempUsers = {}; // Temporary store for OTP verification
+
 
 // Send OTP to user's email
 const sendOTP = async (req, res) => {
