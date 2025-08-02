@@ -13,7 +13,7 @@ const sendOTP = async (req, res) => {
     lastName,
     email,
     password,
-    userName = '',
+    userName ,
     phone = '',
     age = null
   } = req.body;
