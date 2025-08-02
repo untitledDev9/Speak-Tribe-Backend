@@ -1,215 +1,152 @@
-// const userInfo = require('../models/User')
-const bcrypt = require('bcryptjs')
+const userInfo = require('../models/userSchema');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken')
-const tempUsers = require('../utils/tempUsers')
-const userInfo = require('../models/User')
 
-// send otp
+const tempUsers = {}; // Temporary store for OTP verification
+
+// Send OTP to user's email
 const sendOTP = async (req, res) => {
   const {
     firstName,
     lastName,
     email,
     password,
-    userName = "", // optional default
-    phone = "",     // optional default
-    age = null      // optional default
+    userName = '',
+    phone = '',
+    age = null
   } = req.body;
 
-  // check if email already in tempuser store or DB (to prevent spam or dublicates)
-  if (tempUsers[email]) {
-    return res.status(400).json({
-      message: 'OTP already sent. Pleade check your email.'
-    })
-  }
-
-  // generate a 6-digit OTP number
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
-
-  // sent OTP via email
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,     // your email
-      pass: process.env.EMAIL_PASS,      // your app password
-    }
-  })
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'SpeakTribe OTP Verifivation',
-    text: `Your OTP is ${otp}`
-  }
-
   try {
-    await transporter.sendMail(mailOptions)
+    // Check if user already exists in DB
+    const existingUser = await userInfo.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email is already registered. Please log in.' });
+    }
 
-    // hash the password before temporary saving
-    const hasedPassword = await bcrypt.hash(password, 10)
+    // Check if an OTP is already sent and pending verification
+    if (tempUsers[email]) {
+      return res.status(400).json({ message: 'OTP already sent. Please check your email.' });
+    }
 
-    // store all user data + OTP temporarily (not in database yet)
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Setup email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    // Email content
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'SpeakTribe OTP Verification',
+      text: `Your OTP is ${otp}`
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Save temp user data
     tempUsers[email] = {
       firstName,
       lastName,
       userName,
-      age,
       phone,
+      age,
       email,
-      password: hasedPassword,
+      password: hashedPassword,
       otp,
       createdAt: Date.now()
-    }
+    };
 
-    // send status on sucess otp
-    res.status(200).json({
-      message: 'OTP sent to your email'
-    })
+    res.status(200).json({ message: 'OTP sent to your email' });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Error sending OTP' })
+    console.error("OTP Send Error:", error.message);
+    res.status(500).json({ message: 'Error sending OTP', error: error.message });
   }
-}
+};
 
-
-// verifying OTP
+// Verify OTP and register user
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 
-  console.log("Received email:", email);
-  console.log("Received OTP:", otp);
-  console.log("Stored Temp User:", tempUsers[email]);
-
   const tempUser = tempUsers[email];
-
-
   if (!tempUser) {
-    return res.status(400).json({ message: 'No OTP request found for this email.' })
+    return res.status(400).json({ message: 'No OTP request found for this email.' });
   }
 
-  // check if OTP is correct
-  if (tempUser.otp !== otp) {
-    return res.status(400).json({ message: 'invalid OTP' })
+  // Expire OTP after 10 minutes
+  const OTP_EXPIRY_TIME = 10 * 60 * 1000; // 10 mins in ms
+  if (Date.now() - tempUser.createdAt > OTP_EXPIRY_TIME) {
+    delete tempUsers[email];
+    return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
   }
 
-  // save the user to the database
-  const newUser = new userInfo({
-    firstName: tempUser.firstName,
-    lastName: tempUser.lastName,
-    userName: tempUser.userName,
-    email: tempUser.email,
-    phone: tempUser.phone,
-    age: tempUser.age,
-    password: tempUser.password,
-  })
+  // Check OTP match
+  if (otp !== tempUser.otp) {
+    return res.status(400).json({ message: 'Invalid OTP' });
+  }
 
   try {
-    await newUser.save()
-    delete tempUsers[email];    // clean up temp store
-    res.status(201).json({ message: 'User verified and registered successfully' })
-  } catch (error) {
-    console.error("DB Save Error:", error);
-    return res.status(500).json({ message: "Error saving user to DB", error: error.message });
-
-  }
-
-
-
-
-}
-
-
-// Login
-const loginUser = async (req, res) => {
-  const { email, password } = req.body
-  try {
-    // check if user exists
-    const user = await userInfo.findOne({ email })
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' })
-    }
-
-    // compare password
-    const isMatch = await bcrypt.compare(password, user.password)
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' })
-    }
-
-    //  create JWT token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
-
-    // send token and user (without password)
-    const { password: _, ...userData } = user.toObject()  // remove password
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: userData
+    const newUser = new userInfo({
+      firstName: tempUser.firstName,
+      lastName: tempUser.lastName,
+      userName: tempUser.userName,
+      email: tempUser.email,
+      phone: tempUser.phone,
+      age: tempUser.age,
+      password: tempUser.password
     });
 
-  } catch (err) {
-    res.status(500).json({ message: 'server error', err: err.message })
+    await newUser.save();
+    delete tempUsers[email];
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error("User Registration Error:", error.message);
+    res.status(500).json({ message: 'Error creating user', error: error.message });
   }
-}
-
-
-
-
-
-
-module.exports = {
-  sendOTP,
-  verifyOTP,
-  loginUser
 };
 
+// Login User
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
 
+  try {
+    const user = await userInfo.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
 
-// export const SignUp = async(req, res) => {
-//   try {
-//   // get data from req body
-//   const {firstName, lastName, userName, email, phone, age, password} = req.body
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
 
-//   // check if user exist, using the email
-//   const existingUser = await userInfo.findOne({email})
-//   if(existingUser) {
-//     return res.status(400).json({
-//       message: 'user already exist with this email'
-//     })
-//   }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
 
-//   //hash password before saving
-//   const salt = await bcrypt.genSalt(10)  // create salt
-//   const hashedPassword = await bcrypt.hash(password, salt) // hashed password
+    const { password: _, ...userWithoutPassword } = user.toObject();
 
-//   //create new user with hashed password
-//   const newUser = new userInfo({
-//     firstName,
-//     lastName,
-//     userName,
-//     phone,
-//     age,
-//     email,
-//     password : hashedPassword // stored hased password to database
-//   })
+    res.status(200).json({
+      message: 'Login successful',
+      user: userWithoutPassword,
+      token
+    });
+  } catch (error) {
+    console.error("Login Error:", error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
-//   // save new user
-//   await newUser.save()
-
-//   //send sucess message
-//   res.status(201).json({
-//     message: 'User registered successfully'
-//   })
-//   }
-
-//   catch (error){
-//     res.status(500).json({
-//       message: 'internal server error',
-//       error : error.message
-//     })
-//   }
-// 
+module.exports = { sendOTP, verifyOTP, loginUser };
