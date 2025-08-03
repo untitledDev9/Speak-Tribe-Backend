@@ -107,6 +107,13 @@ const verifyOTP = async (req, res) => {
     return res.status(400).json({ message: 'Invalid OTP' });
   }
 
+  // before creating new user, check if already exists
+const existingUser = await userModel.findOne({ email: existingOtp.email });
+if (existingUser) {
+  return res.status(400).json({ message: 'User already exists' });
+}
+
+
   try {
     // Create user after OTP verification
     const newUser = new userModel({
