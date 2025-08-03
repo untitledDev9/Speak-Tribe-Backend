@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken')
 const tempUsers = require('../utils/tempUsers')
 const userInfo = require('../models/User')
+const userModel = require('../models/User');
 
 
 
