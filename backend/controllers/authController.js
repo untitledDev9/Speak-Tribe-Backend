@@ -13,7 +13,7 @@ const sendOTP = async (req, res) => {
     lastName,
     email,
     password,
-    userName ,
+    userName,
     phone = '',
     age = null
   } = req.body;
@@ -42,7 +42,7 @@ const sendOTP = async (req, res) => {
       }
     });
 
-// customise email
+    // customise email
 
     const otpEmail = `
       <p> </p>
@@ -85,8 +85,6 @@ const sendOTP = async (req, res) => {
 
 
 
-
-
 // Verify OTP and register user
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
@@ -109,14 +107,16 @@ const verifyOTP = async (req, res) => {
   }
 
   try {
-    const newUser = new userInfo({
+    // Create user after OTP verification
+    const newUser = new userModel({
       firstName: tempUser.firstName,
       lastName: tempUser.lastName,
       userName: tempUser.userName,
       email: tempUser.email,
+      password: tempUser.password,
       phone: tempUser.phone,
       age: tempUser.age,
-      password: tempUser.password
+      isAdmin: false
     });
 
     await newUser.save();
