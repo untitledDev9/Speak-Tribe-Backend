@@ -42,6 +42,12 @@ const sendOTP = async (req, res) => {
       }
     });
 
+// customise email
+
+    const otpEmail = `
+      <p> </p>
+    
+    `
     // Email content
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -75,6 +81,11 @@ const sendOTP = async (req, res) => {
     res.status(500).json({ message: 'Error sending OTP', error: error.message });
   }
 };
+
+
+
+
+
 
 // Verify OTP and register user
 const verifyOTP = async (req, res) => {
@@ -118,6 +129,51 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+
+
+
+// resend OTP
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    // Delete any existing OTPs
+    await OTPModel.deleteMany({ email });
+
+    // Generate new OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set expiration time (10 mins)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save new OTP
+    const newOTP = new OTPModel({
+      email,
+      otp: otpCode,
+      expiresAt
+    });
+
+    await newOTP.save();
+
+    // Send OTP via email
+    await sendEmail(email, 'Your SpeakTribe OTP', `Your OTP is: ${otpCode}`);
+
+    res.status(200).json({ message: 'OTP resent successfully' });
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ message: 'Failed to resend OTP' });
+  }
+};
+
+
+
+
+
+
 // Login User
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -150,4 +206,4 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { sendOTP, verifyOTP, loginUser };
+module.exports = { sendOTP, verifyOTP, loginUser, resendOtp };
