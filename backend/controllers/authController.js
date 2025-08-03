@@ -19,7 +19,7 @@ const sendOTP = async (req, res) => {
 
   try {
     // Check if user already exists in DB
-    const existingUser = await userInfo.findOne({ email });
+    const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email is already registered. Please log in.' });
     }
@@ -183,7 +183,7 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await userInfo.findOne({ email });
+    const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
