@@ -2,7 +2,6 @@ const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken')
 const tempUsers = require('../utils/tempUsers')
-const userInfo = require('../models/User')
 const userModel = require('../models/User');
 
 
@@ -14,7 +13,6 @@ const sendOTP = async (req, res) => {
     lastName,
     email,
     password,
-    userName,
     phone = '',
     age = null
   } = req.body;
@@ -67,7 +65,6 @@ const sendOTP = async (req, res) => {
     tempUsers[email] = {
       firstName,
       lastName,
-      userName,
       phone,
       age,
       email,
@@ -108,7 +105,7 @@ const verifyOTP = async (req, res) => {
   }
 
   // before creating new user, check if already exists
-const existingUser = await userModel.findOne({ email: existingOtp.email });
+const existingUser = await userModel.findOne({ email: tempUser.email });
 if (existingUser) {
   return res.status(400).json({ message: 'User already exists' });
 }
@@ -119,7 +116,6 @@ if (existingUser) {
     const newUser = new userModel({
       firstName: tempUser.firstName,
       lastName: tempUser.lastName,
-      userName: tempUser.userName,
       email: tempUser.email,
       password: tempUser.password,
       phone: tempUser.phone,
