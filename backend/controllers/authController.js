@@ -9,7 +9,7 @@ const userModel = require('../models/User');
 
 // Send OTP to user's email
 const sendOTP = async (req, res) => {
-  const { firstName, lastName, email, password, userName = "New User", phone = "", age = null } = req.body;
+  const { firstName, lastName, email, password, phone = "", age = null } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
@@ -77,14 +77,13 @@ const verifyOTP = async (req, res) => {
     }
 
     // Optional: collect temp user data from frontend or another temp collection
-    const { firstName, lastName, password, userName = "New User", phone = "", age = null } = req.body;
+    const { firstName, lastName, password, phone = "", age = null } = req.body;
 
     const newUser = new User({
       firstName,
       lastName,
       email,
       password,
-      userName,
       phone,
       age
     });
