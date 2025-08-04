@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken')
-const tempUsers = require('../utils/tempUsers')
+// const tempUsers = require('../utils/tempUsers')
 const OtpModel = require("../models/Otp");
-const userModel = require('../models/User');
+const User = require('../models/User');
 
 
 
