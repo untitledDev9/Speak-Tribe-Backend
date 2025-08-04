@@ -2,37 +2,28 @@ const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken')
 const tempUsers = require('../utils/tempUsers')
+const OtpModel = require("../models/Otp");
 const userModel = require('../models/User');
 
 
 
 // Send OTP to user's email
 const sendOTP = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    email,
-    password,
-    phone = '',
-    age = null
-  } = req.body;
+  const { firstName, lastName, email, password, userName = "New User", phone = "", age = null } = req.body;
 
   try {
-    // Check if user already exists in DB
-    const existingUser = await userModel.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email is already registered. Please log in.' });
     }
 
-    // Check if an OTP is already sent and pending verification
-    if (tempUsers[email]) {
+    const existingOtp = await OtpModel.findOne({ email });
+    if (existingOtp) {
       return res.status(400).json({ message: 'OTP already sent. Please check your email.' });
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Setup email transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -41,44 +32,31 @@ const sendOTP = async (req, res) => {
       }
     });
 
-    // customise email
-
-    const otpEmail = `
-      <p> </p>
-    
-    `
-    // Email content
-    const mailOptions = {
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'SpeakTribe OTP Verification',
-      text: `Your OTP is ${otp}`
-    };
+      text: `Your OTP is ${otp}`,
+    });
 
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save temp user data
-    tempUsers[email] = {
-      firstName,
-      lastName,
-      phone,
-      age,
+    // Save OTP and temp user data
+    await OtpModel.create({
       email,
-      password: hashedPassword,
       otp,
-      createdAt: Date.now()
-    };
+    });
 
+    // Optional: store hashed password and other user info in frontend or separate tempUser model
+
+    // You may pass back user info as needed
     res.status(200).json({ message: 'OTP sent to your email' });
   } catch (error) {
-    console.error("OTP Send Error:", error.message);
-    res.status(500).json({ message: 'Error sending OTP', error: error.message });
+    console.error("Send OTP Error:", error.message);
+    res.status(500).json({ message: "Error sending OTP", error: error.message });
   }
 };
+
 
 
 
@@ -87,91 +65,85 @@ const sendOTP = async (req, res) => {
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 
-  const tempUser = tempUsers[email];
-  if (!tempUser) {
-    return res.status(400).json({ message: 'No OTP request found for this email.' });
-  }
-
-  // Expire OTP after 10 minutes
-  const OTP_EXPIRY_TIME = 10 * 60 * 1000; // 10 mins in ms
-  if (Date.now() - tempUser.createdAt > OTP_EXPIRY_TIME) {
-    delete tempUsers[email];
-    return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-  }
-
-  // Check OTP match
-  if (otp !== tempUser.otp) {
-    return res.status(400).json({ message: 'Invalid OTP' });
-  }
-
-  // before creating new user, check if already exists
-const existingUser = await userModel.findOne({ email: tempUser.email });
-if (existingUser) {
-  return res.status(400).json({ message: 'User already exists' });
-}
-
-
   try {
-    // Create user after OTP verification
-    const newUser = new userModel({
-      firstName: tempUser.firstName,
-      lastName: tempUser.lastName,
-      email: tempUser.email,
-      password: tempUser.password,
-      phone: tempUser.phone,
-      age: tempUser.age,
-      isAdmin: false
+    const otpRecord = await OtpModel.findOne({ email });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "No OTP request found or OTP expired." });
+    }
+
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    // Optional: collect temp user data from frontend or another temp collection
+    const { firstName, lastName, password, userName = "New User", phone = "", age = null } = req.body;
+
+    const newUser = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+      userName,
+      phone,
+      age
     });
 
     await newUser.save();
-    delete tempUsers[email];
 
-    res.status(201).json({ message: 'User registered successfully' });
+    await OtpModel.deleteOne({ email });
+
+    res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    console.error("User Registration Error:", error.message);
-    res.status(500).json({ message: 'Error creating user', error: error.message });
+    console.error("Verify OTP Error:", error.message);
+    res.status(500).json({ message: "Error verifying OTP", error: error.message });
   }
 };
+
 
 
 
 
 // resend OTP
-const resendOtp = async (req, res) => {
+const resendOTP = async (req, res) => {
   const { email } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ message: 'Email is required' });
-  }
-
   try {
-    // Delete any existing OTPs
-    await OTPModel.deleteMany({ email });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email is already registered." });
+    }
 
-    // Generate new OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Set expiration time (10 mins)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await OtpModel.findOneAndUpdate(
+      { email },
+      { otp, createdAt: Date.now() },
+      { upsert: true, new: true }
+    );
 
-    // Save new OTP
-    const newOTP = new OTPModel({
-      email,
-      otp: otpCode,
-      expiresAt
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
     });
 
-    await newOTP.save();
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'SpeakTribe OTP Verification (Resent)',
+      text: `Your OTP is ${otp}`,
+    });
 
-    // Send OTP via email
-    await sendEmail(email, 'Your SpeakTribe OTP', `Your OTP is: ${otpCode}`);
-
-    res.status(200).json({ message: 'OTP resent successfully' });
-  } catch (err) {
-    console.error('Resend OTP error:', err);
-    res.status(500).json({ message: 'Failed to resend OTP' });
+    res.status(200).json({ message: "New OTP sent to your email." });
+  } catch (error) {
+    console.error("Resend OTP Error:", error.message);
+    res.status(500).json({ message: "Failed to resend OTP", error: error.message });
   }
 };
+
 
 
 
