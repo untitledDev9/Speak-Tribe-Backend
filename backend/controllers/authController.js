@@ -182,4 +182,4 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { sendOTP, verifyOTP, loginUser, resendOtp };
+module.exports = { sendOTP, verifyOTP, loginUser, resendOTP };
