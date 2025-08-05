@@ -24,6 +24,9 @@ app.use('/api/language', languageRoutes);
 const yorubaRoutes = require('./routes/yoruba');
 app.use('/api/yoruba', yorubaRoutes);
 
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/user", userRoutes);
+
 app.get('/', (req,res) => {
   res.status(200).json({
     message: 'Speak Tribe server is up and running'
