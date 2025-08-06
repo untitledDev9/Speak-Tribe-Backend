@@ -44,6 +44,7 @@ const sendOTP = async (req, res) => {
     // Save OTP and temp user data
     await OtpModel.create({
       email,
+      password : hashedPassword,
       otp,
     });
 
@@ -63,7 +64,7 @@ const sendOTP = async (req, res) => {
 
 // Verify OTP and register user
 const verifyOTP = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp, firstName, lastName, phone = "", age = null } = req.body;
 
   try {
     const otpRecord = await OtpModel.findOne({ email });
@@ -76,20 +77,17 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP." });
     }
 
-    // Optional: collect temp user data from frontend or another temp collection
-    const { firstName, lastName, password, phone = "", age = null } = req.body;
-
+    // ✅ Use hashed password from OTP record
     const newUser = new User({
       firstName,
       lastName,
       email,
-      password,
+      password: otpRecord.password,
       phone,
-      age
+      age,
     });
 
     await newUser.save();
-
     await OtpModel.deleteOne({ email });
 
     res.status(201).json({ message: "User registered successfully" });
@@ -98,6 +96,7 @@ const verifyOTP = async (req, res) => {
     res.status(500).json({ message: "Error verifying OTP", error: error.message });
   }
 };
+
 
 
 
