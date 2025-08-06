@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router(); // ✅ This line is required
+const router = express.Router(); 
 
 const { sendOTP, verifyOTP, loginUser, resendOTP } = require('../controllers/authController');
 
