@@ -21,8 +21,8 @@ app.use('/api', dashboardRoute);
 const languageRoutes = require('./routes/languageRoute');
 app.use('/api/language', languageRoutes);
 
-const yorubaRoutes = require('./routes/yoruba');
-app.use('/api/yoruba', yorubaRoutes);
+const yorubaAlphabets = require('./routes/yoruba/alphabeteRoutes'); // yoruba alphabet
+app.use('/api/yoruba', yorubaAlphabets);
 
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/user", userRoutes);
