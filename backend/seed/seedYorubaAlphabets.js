@@ -31,15 +31,21 @@ const alphabets = [
   { letter: "Y", pronunciation: "yeh" }
 ];
 
+// Add position field
+const alphabetsWithPosition = alphabets.map((item, index) => ({
+  ...item,
+  position: index + 1,
+}));
+
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     await YorubaAlphabet.deleteMany();
-    await YorubaAlphabet.insertMany(alphabets);
-    console.log("✅ Yoruba Alphabets Seeded");
+    await YorubaAlphabet.insertMany(alphabetsWithPosition);
+    console.log("✅ Yoruba Alphabets Seeded with position");
     process.exit();
   } catch (err) {
-    console.error(err);
+    console.error("❌ Seeding failed:", err);
     process.exit(1);
   }
 };

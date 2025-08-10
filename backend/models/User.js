@@ -24,15 +24,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  language:
-  {
-    type: String,
-    default: null
-  },
-  progress:
-  {
-    type: Object,
-    default: {}
+  progress: {
+    alphabet: { type: Number, default: 0 },
+    words: { type: Number, default: 0 },
+    sentences: { type: Number, default: 0 }
   },
   otp: {
     type: String,
@@ -40,11 +35,10 @@ const UserSchema = new mongoose.Schema({
   otpExpires: {
     type: Date,
   },
-  selectedLanguage: {
-    type: String,
-    enum: ["Yoruba", "Hausa", "Igbo"],
-    default: null,
-  },
+ selectedLanguage: {
+  type: String,
+  default: null,
+},
 }, { timestamps: true }, { collection: 'userInfo' })
 
 module.exports = mongoose.model('userInfo', UserSchema)

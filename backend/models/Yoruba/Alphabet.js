@@ -1,15 +1,9 @@
 const mongoose = require('mongoose');
 
 const alphabetSchema = new mongoose.Schema({
-  letter: {
-    type: String,
-    required: true,
-  },
-  pronunciation: {
-    type: String,
-    required: true,
-  }
+  letter: { type: String, required: true },
+  pronunciation: { type: String, required: true },
+  position: { type: Number, required: true },
 });
 
-const YorubaAlphabet = mongoose.model('YorubaAlphabet', alphabetSchema);
-module.exports = YorubaAlphabet;
+module.exports = mongoose.model('YorubaAlphabet', alphabetSchema);
