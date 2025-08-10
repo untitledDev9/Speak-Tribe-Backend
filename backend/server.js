@@ -1,51 +1,45 @@
-const express = require('express')
-const cors = require('cors')
-const dotenv = require('dotenv')
-const connectDB = require('./config/db')
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
 
+// Load environment variables
 dotenv.config();
-connectDB()
-const app = express()
 
-// middlewares
-app.use(cors())
-app.use(express.json())     // to parse json data or bodies
+// Connect to MongoDB
+connectDB();
 
-// routes
-const authRoutes = require('./routes/authRoutes')   // all my auth contollers e.g login, signup
-app.use('/api/auth', authRoutes)    // base URL
+const app = express();
 
-const dashboardRoute = require('./routes/dashboard'); // user dashboard routh
-app.use('/api', dashboardRoute);
+// ===== Middleware =====
+app.use(cors());
+app.use(express.json()); // Parse JSON request bodies
 
-const languageRoutes = require('./routes/languageRoute');
-app.use('/api/language', languageRoutes);
+// ===== Routes =====
+const authRoutes = require("./routes/authRoutes"); // Login, signup, etc.
+app.use("/api/auth", authRoutes);
 
-const yorubaAlphabets = require('./routes/yoruba/alphabeteRoutes'); // yoruba alphabet
-app.use('/api/yoruba', yorubaAlphabets);
+const dashboardRoute = require("./routes/dashboard"); // User dashboard
+app.use("/api", dashboardRoute);
 
-const userRoutes = require("./routes/userRoutes");
+const languageRoutes = require("./routes/languageRoute"); // Language data
+app.use("/api/language", languageRoutes);
+
+const yorubaAlphabets = require("./routes/yoruba/alphabeteRoutes"); // Yoruba alphabet
+app.use("/api/yoruba", yorubaAlphabets);
+
+const userRoutes = require("./routes/userRoutes"); // User profile & settings
 app.use("/api/user", userRoutes);
 
-app.get('/', (req,res) => {
+// ===== Health Check Route =====
+app.get("/", (req, res) => {
   res.status(200).json({
-    message: 'Speak Tribe server is up and running'
-  })
-})
+    message: "Speak Tribe server is up and running",
+  });
+});
 
-
-
-
-
-
-
-
-
-
-
-
-
-const PORT = process.env.PORT || 6000
+// ===== Start Server =====
+const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port: ${PORT} ✅✅✅`)
-})
+  console.log(`✅ Server is running on port: ${PORT}`);
+});
