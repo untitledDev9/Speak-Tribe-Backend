@@ -31,6 +31,16 @@ app.use("/api/yoruba", yorubaAlphabets);
 const userRoutes = require("./routes/userRoutes"); // User profile & settings
 app.use("/api/user", userRoutes);
 
+
+
+
+const learnRoutes = require("./routes/learnRoutes");
+app.use("/api/learn", learnRoutes);
+
+
+
+
+
 // ===== Health Check Route =====
 app.get("/", (req, res) => {
   res.status(200).json({
