@@ -1,6 +1,6 @@
  
  // controllers/learnController.js
-const User = require("../models/userInfo"); // adjust path/name if different
+const User = require("../models/User"); // adjust path/name if different
 
 // Example alphabets — you can move to DB later
 const ALPHABETS = {
